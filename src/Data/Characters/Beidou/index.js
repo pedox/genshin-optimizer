@@ -50,7 +50,7 @@ const char = {
           text: `${i + 1}-Hit Additional Electro DMG`,
           formulaText: stats => <span>{(percentArr[stats.tlvl.auto] * 0.2)?.toFixed(2)}% {Stat.printStat(getTalentStatKey("normal", stats, true), stats)}</span>,
           formula: formula.normal[`a${i}`],
-          variant: stats => getTalentStatKeyVariant("normal", stats),
+          variant: stats => getTalentStatKeyVariant("normal", stats, true),
         }))
       }, {
         text: <span><strong>Charged Attack</strong> Drains Stamina over time to perform continuous slashes. At end of the sequence, perform a more powerful slash.</span>,
