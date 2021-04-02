@@ -12,7 +12,7 @@ import CharacterDatabase from '../Database/CharacterDatabase';
 import { Link } from 'react-router-dom';
 
 //lazy load the character display
-const CharacterDisplayCardPromise = import('../Character/CharacterDisplayCard');
+const CharacterDisplayCardPromise = import('./CharacterDisplayCard');
 const CharacterDisplayCard = lazy(() => CharacterDisplayCardPromise)
 const toggle = {
   level: "Level",
