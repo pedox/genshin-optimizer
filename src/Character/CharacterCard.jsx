@@ -1,6 +1,6 @@
 import { faEdit, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import React, { useEffect, useReducer } from 'react';
+import React, { useEffect } from 'react';
 import { Badge, Image } from 'react-bootstrap';
 import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
@@ -15,15 +15,19 @@ import Stat from '../Stat';
 import Weapon from '../Weapon/Weapon';
 import Character from './Character';
 import CharacterDatabase from '../Database/CharacterDatabase';
+import { useForceUpdate } from '../Util/ReactUtil';
 export default function CharacterCard({ characterKey, onEdit, onDelete, cardClassName = "", bg = "", header, footer }) {
-  const [, forceUpdate] = useReducer(x => x + 1, 0);
+  const forceUpdate = useForceUpdate()
   useEffect(() => {
     Promise.all([
       Character.getCharacterDataImport(),
       Weapon.getWeaponDataImport(),
       Artifact.getDataImport(),
-    ]).then(() => forceUpdate())
-  }, [])
+    ]).then(forceUpdate)
+    characterKey && CharacterDatabase.registerCharListener(characterKey, forceUpdate)
+    return () =>
+      characterKey && CharacterDatabase.unregisterCharListener(characterKey, forceUpdate)
+  }, [characterKey, forceUpdate])
   const character = CharacterDatabase.get(characterKey)
   if (!character) return null;
   const build = Character.calculateBuild(character)
@@ -49,11 +53,11 @@ export default function CharacterCard({ characterKey, onEdit, onDelete, cardClas
         <Col xs={"auto"}>
           <span className="float-right align-top ml-1">
             {onEdit && <Button variant="primary" size="sm" className="mr-1"
-              onClick={onEdit}>
+              onClick={() => onEdit(characterKey)}>
               <FontAwesomeIcon icon={faEdit} />
             </Button>}
             {onDelete && <Button variant="danger" size="sm"
-              onClick={onDelete}>
+              onClick={() => onDelete(characterKey)}>
               <FontAwesomeIcon icon={faTrashAlt} />
             </Button>}
           </span>

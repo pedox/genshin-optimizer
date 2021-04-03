@@ -72,9 +72,7 @@ export default function ArtifactDisplay(props) {
 
   useEffect(() => {
     ReactGA.pageview('/artifact')
-    function handleDbDirty() {
-      setdbDirty({})
-    }
+    const handleDbDirty = () => setdbDirty({})
     Character.getCharacterDataImport()?.then(forceUpdateArtifactDisplay)
     Artifact.getDataImport()?.then(forceUpdateArtifactDisplay)
     ArtifactDatabase.registerListener(handleDbDirty)

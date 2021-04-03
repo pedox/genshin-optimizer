@@ -9,17 +9,16 @@ import Character from "../Character";
 import DamageOptionsAndCalculation from './DamageOptionsAndCalculation';
 import StatDisplayComponent from './StatDisplayComponent';
 
-function CharacterArtifactPane({ character, character: { characterKey, artifactConditionals }, equippedBuild, newBuild, editable, forceUpdate, setState, setOverride, artifacts }) {
+function CharacterArtifactPane({ character, character: { characterKey, artifactConditionals }, equippedBuild, newBuild, editable, characterDispatch, artifacts }) {
   //choose which one to display stats for
-  let build = newBuild ? newBuild : equippedBuild
+  const build = newBuild ? newBuild : equippedBuild
   let artifactsAssumeFull = newBuild ? newBuild.finalStats?.artifactsAssumeFull : character.artifactsAssumeFull
   if (newBuild) artifactConditionals = newBuild.artifactConditionals
   const statKeys = Character.getDisplayStatKeys(build.finalStats)
-  const setStateArtifactConditional = (setKey, setNumKey, conditionalNum) => setState?.(state =>
-    ({ artifactConditionals: ConditionalsUtil.setConditional(state.artifactConditionals, { srcKey: setKey, srcKey2: setNumKey }, conditionalNum) }))
+  const setStateArtifactConditional = (setKey, setNumKey, conditionalNum) => characterDispatch?.({ artifactConditionals: ConditionalsUtil.setConditional(artifactConditionals, { srcKey: setKey, srcKey2: setNumKey }, conditionalNum) })
   return <>
     {Character.hasTalentPage(characterKey) && <Row><Col xs={12} className="mb-2">
-      <DamageOptionsAndCalculation {...{ character, setState, setOverride, newBuild, equippedBuild }} />
+      <DamageOptionsAndCalculation {...{ character, characterDispatch, newBuild, equippedBuild }} />
     </Col></Row>}
     <Row>
       <Col className="mb-2">
@@ -30,7 +29,7 @@ function CharacterArtifactPane({ character, character: { characterKey, artifactC
           {newBuild ? <Card.Footer>
             <Button onClick={() => {
               Character.equipArtifacts(characterKey, newBuild.artifactIds)
-              forceUpdate?.()
+              characterDispatch?.({ type: "fromDB" })
             }}>Equip All artifacts to current character</Button>
             {artifactsAssumeFull && <Alert className="float-right text-right mb-0 py-2" variant="orange" ><b>Assume Main Stats are Fully Leveled</b></Alert>}
           </Card.Footer> : null}
@@ -88,7 +87,7 @@ function CharacterArtifactPane({ character, character: { characterKey, artifactC
               </Col> : null
             }) : Artifact.getSlotKeys().map(slotKey =>
               build.artifactIds[slotKey] ? <Col sm={6} lg={4} key={build.artifactIds[slotKey]} className="mb-2">
-                <ArtifactCard artifactId={build.artifactIds[slotKey]} editable={Boolean(forceUpdate)} assumeFull={artifactsAssumeFull} />
+                <ArtifactCard artifactId={build.artifactIds[slotKey]} editable={editable} assumeFull={artifactsAssumeFull} />
               </Col> : null
             )}
         </Row>

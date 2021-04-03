@@ -9,11 +9,11 @@ import { GetDependencies } from "../../StatDependency";
 import Character from "../Character";
 import StatInput from "../StatInput";
 
-function ReactionToggle({ character: { characterKey, reactionMode = "none" }, setReactionMode, className }) {
+function ReactionToggle({ character: { characterKey, reactionMode = "none" }, characterDispatch, className }) {
   reactionMode === null && (reactionMode = "none")
   const charEleKey = Character.getElementalKey(characterKey)
   return ["pyro", "hydro", "cryo"].includes(charEleKey) && <ToggleButtonGroup className={className}
-    type="radio" name="reactionMode" defaultValue={reactionMode} onChange={(val) => setReactionMode(val === "none" ? null : val)}>
+    type="radio" name="reactionMode" defaultValue={reactionMode} onChange={(val) => characterDispatch({ reactionMode: val === "none" ? null : val })}>
     <ToggleButton value={"none"} variant={reactionMode === "none" ? "success" : "primary"}>No Reactions</ToggleButton >
     {charEleKey === "pyro" && <ToggleButton value={"pyro_vaporize"} variant={reactionMode === "pyro_vaporize" ? "success" : "primary"}>
       <span className="text-vaporize">Vaporize(Pyro) <Image src={Assets.elements.hydro} className="inline-icon" />+<Image src={Assets.elements.pyro} className="inline-icon" /></span>
@@ -29,8 +29,8 @@ function ReactionToggle({ character: { characterKey, reactionMode = "none" }, se
     </ToggleButton >}
   </ToggleButtonGroup>
 }
-function HitModeToggle({ hitMode, setHitMode, className }) {
-  return <ToggleButtonGroup type="radio" value={hitMode} name="hitOptions" onChange={setHitMode} className={className}>
+function HitModeToggle({ hitMode, characterDispatch, className }) {
+  return <ToggleButtonGroup type="radio" value={hitMode} name="hitOptions" onChange={m => characterDispatch({ hitMode: m })} className={className}>
     <ToggleButton value="avgHit" variant={hitMode === "avgHit" ? "success" : "primary"}>Avg. DMG</ToggleButton>
     <ToggleButton value="hit" variant={hitMode === "hit" ? "success" : "primary"}>Normal Hit, No Crit</ToggleButton>
     <ToggleButton value="critHit" variant={hitMode === "critHit" ? "success" : "primary"}>Crit Hit DMG</ToggleButton>
@@ -115,7 +115,7 @@ const ContextAwareToggle = ({ eventKey, callback }) => {
   );
 }
 
-export default function DamageOptionsAndCalculation({ character, character: { hitMode }, setState, setOverride, newBuild, equippedBuild }) {
+export default function DamageOptionsAndCalculation({ character, character: { hitMode }, characterDispatch, newBuild, equippedBuild }) {
   //choose which one to display stats for
   const build = newBuild ? newBuild : equippedBuild
   return <Accordion>
@@ -127,8 +127,7 @@ export default function DamageOptionsAndCalculation({ character, character: { hi
             <small>Expand below to edit enemy details.</small>
           </Col>
           <Col xs="auto">
-            {/* TODO reaction interaction UI */}
-            <ReactionToggle {...{ character, setReactionMode: r => setState({ reactionMode: r }) }} />
+            <ReactionToggle character={character} characterDispatch={characterDispatch} />
           </Col>
           <Col xs="auto">
             <ContextAwareToggle as={Button} eventKey="1" />
@@ -151,7 +150,7 @@ export default function DamageOptionsAndCalculation({ character, character: { hi
                 value={Character.getStatValueWithOverride(character, "enemyLevel")}
                 placeholder={Stat.getStatNameRaw("enemyLevel")}
                 defaultValue={Character.getBaseStatValue(character, "enemyLevel")}
-                onValueChange={(val) => setOverride?.("enemyLevel", val)}
+                onValueChange={value => characterDispatch({ type: "statOverride", statKey: "enemyLevel", value })}
               />
             </Col>
             {Character.getElementalKeys().map(eleKey => {
@@ -160,14 +159,14 @@ export default function DamageOptionsAndCalculation({ character, character: { hi
               let elementImmunity = Character.getStatValueWithOverride(character, immunityStatKey)
               return <Col xs={12} xl={6} key={eleKey} className="mb-2">
                 <StatInput
-                  prependEle={<Button variant={eleKey} onClick={() => setOverride(immunityStatKey, !elementImmunity)} className="text-darkcontent">
+                  prependEle={<Button variant={eleKey} onClick={() => characterDispatch({ type: "statOverride", statKey: immunityStatKey, value: !elementImmunity })} className="text-darkcontent">
                     <FontAwesomeIcon icon={elementImmunity ? faCheckSquare : faSquare} className="fa-fw" /> Immunity
                 </Button>}
                   name={<b>{Stat.getStatNameRaw(statKey)}</b>}
                   value={Character.getStatValueWithOverride(character, statKey)}
                   placeholder={Stat.getStatNameRaw(statKey)}
                   defaultValue={Character.getBaseStatValue(character, statKey)}
-                  onValueChange={(val) => setOverride?.(statKey, val)}
+                  onValueChange={value => characterDispatch({ type: "statOverride", statKey, value })}
                   disabled={elementImmunity}
                 />
               </Col>
@@ -185,7 +184,7 @@ export default function DamageOptionsAndCalculation({ character, character: { hi
             <small>Expand below to see calculation details.</small>
           </Col>
           <Col xs="auto">
-            <HitModeToggle {...{ hitMode, setHitMode: m => setState({ hitMode: m }) }} />
+            <HitModeToggle hitMod={hitMode} characterDispatch={characterDispatch} />
           </Col>
           <Col xs="auto">
             <ContextAwareToggle as={Button} eventKey="2" />
