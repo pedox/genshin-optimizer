@@ -98,6 +98,7 @@ export default function CharacterDisplayCard({ characterKey, character: propChar
       char = { ...initialCharacter(characterKey), ...CharacterDatabase.get(characterKey, {}) }
     else if (propCharacter)
       char = { ...initialCharacter(propCharacter.characterKey), ...propCharacter }
+    if (!char) return
     characterDispatch({ type: "overwrite", character: char })
   }, [characterKey, propCharacter])
   useEffect(() => {

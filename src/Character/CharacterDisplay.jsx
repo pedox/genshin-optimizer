@@ -30,6 +30,7 @@ export default function CharacterDisplay(props) {
   const [sortBy, setsortBy] = useState(() => Object.keys(toggle)[0])
   const [elementalFilter, setelementalFilter] = useState(() => Character.getElementalKeysWithoutPhysical())
   const [weaponFilter, setweaponFilter] = useState(() => Weapon.getWeaponTypeKeys())
+  const [newCharacter, setnewCharacter] = useState(false)
   const forceUpdate = useForceUpdate()
   const scrollRef = useRef(null)
   useEffect(() => {
@@ -64,7 +65,10 @@ export default function CharacterDisplay(props) {
     }, 500);
   }, [setcharIdToEdit, scrollRef])
 
-  const cancelEditCharacter = useCallback(() => setcharIdToEdit(""), [setcharIdToEdit])
+  const cancelEditCharacter = useCallback(() => {
+    setcharIdToEdit("")
+    setnewCharacter(false)
+  }, [setcharIdToEdit])
 
   const charKeyList = CharacterDatabase.getCharacterKeyList().filter(cKey => {
     if (!elementalFilter.includes(Character.getElementalKey(cKey))) return false
@@ -87,7 +91,7 @@ export default function CharacterDisplay(props) {
       return sortingFunc["level"](b) - sortingFunc["level"](a)
     }
   })
-  const showEditor = Boolean(charIdToEdit)
+  const showEditor = Boolean(charIdToEdit || newCharacter)
   return <Container ref={scrollRef}>
     {/* editor/character detail display */}
     {showEditor ? <Row className="mt-2"><Col>
@@ -126,7 +130,7 @@ export default function CharacterDisplay(props) {
       </Card.Body>
     </Card>
     <Row className="mt-2">
-      {showEditor ? null : <Col lg={4} md={6} className="mb-2">
+      {!showEditor && <Col lg={4} md={6} className="mb-2">
         <Card className="h-100" bg="darkcontent" text="lightfont">
           <Card.Header className="pr-2">
             <span>Add New Character</span>
@@ -134,7 +138,7 @@ export default function CharacterDisplay(props) {
           <Card.Body className="d-flex flex-column justify-content-center">
             <Row className="d-flex flex-row justify-content-center">
               <Col xs="auto">
-                <Button onClick={() => editCharacter("")}>
+                <Button onClick={() => setnewCharacter(true)}>
                   <h1><FontAwesomeIcon icon={faPlus} className="fa-fw" /></h1>
                 </Button>
               </Col>
