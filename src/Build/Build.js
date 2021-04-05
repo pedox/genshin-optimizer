@@ -52,7 +52,7 @@ export function pruneArtifacts(artifacts, artifactSetEffects, significantStats, 
           equal = false
       }
 
-      return equal
+      return equal && candidate.id < other.id
     })
   ).map(tmp => tmp.artifact)
 }
