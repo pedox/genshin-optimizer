@@ -31,7 +31,7 @@ onmessage = async (e) => {
 
   const dependencies = GetDependencies(stats.modifiers, [...targetKeys, ...Object.keys(minFilters), ...Object.keys(maxFilters)])
   const prunedArtifacts = Object.fromEntries(Object.entries(splitArtifacts).map(([key, values]) =>
-    [key, pruneArtifacts(values, artifactSetEffects, new Set(dependencies))]))
+    [key, pruneArtifacts(values, artifactSetEffects, new Set(dependencies), ascending)]))
   let { initialStats, formula } = PreprocessFormulas(dependencies, stats)
   let builds = [], threshold = -Infinity
 

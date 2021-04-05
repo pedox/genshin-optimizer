@@ -5,7 +5,7 @@ import ElementalData from "../Data/ElementalData"
  * @param {artifact[]} artifactsBySlot - list of artifacts of the same slot
  * @param {Object.<setKey, number>} setFilters - minimum number of artifacts in each set
  */
-export function pruneArtifacts(artifacts, artifactSetEffects, significantStats) {
+export function pruneArtifacts(artifacts, artifactSetEffects, significantStats, ascending) {
   const tmp = artifacts.map(artifact => {
     let potential = {}
 
@@ -23,6 +23,13 @@ export function pruneArtifacts(artifacts, artifactSetEffects, significantStats) 
           potential[key] = (potential[key] ?? 0) + value
     }
 
+    if (ascending) {
+      for (const key in min)
+        min[key] = -min[key]
+      for (const key in potential)
+        potential[key] = -potential[key]
+      return {artifact, min: potential, max: min}
+    }
     return { artifact, min, max: potential }
   })
 
