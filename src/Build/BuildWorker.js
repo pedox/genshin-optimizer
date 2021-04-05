@@ -1,6 +1,6 @@
 import '../WorkerHack'
 import { PreprocessFormulas } from "../StatData";
-import { artifactSetPermutations, artifactPermutations } from "./Build"
+import { artifactSetPermutations, artifactPermutations, pruneArtifacts, calculateTotalBuildNumber } from "./Build"
 import charFormulas from "../Data/Characters/formula"
 import { GetDependencies } from '../StatDependency';
 
@@ -30,6 +30,8 @@ onmessage = async (e) => {
   }
 
   const dependencies = GetDependencies(stats.modifiers, [...targetKeys, ...Object.keys(minFilters), ...Object.keys(maxFilters)])
+  const prunedArtifacts = Object.fromEntries(Object.entries(splitArtifacts).map(([key, values]) =>
+    [key, pruneArtifacts(values, artifactSetEffects, new Set(dependencies))]))
   let { initialStats, formula } = PreprocessFormulas(dependencies, stats)
   let builds = [], threshold = -Infinity
 
@@ -38,7 +40,13 @@ onmessage = async (e) => {
     builds.splice(maxBuildsToShow)
   }
 
-  let buildCount = 0;
+  const oldCount = calculateTotalBuildNumber(splitArtifacts, setFilters)
+  const newCount = calculateTotalBuildNumber(prunedArtifacts, setFilters)
+  let buildCount = oldCount - newCount;
+
+  if (process.env.NODE_ENV === "development")
+    console.log(`Skipped ${Math.round(buildCount/1000000)}M entries out of ${Math.round(oldCount/1000000)}M, ${Math.round(newCount/1000000)}M remaining.`)
+
   const callback = (accu, stats) => {
     if (!(buildCount++ % 10000)) postMessage({ progress: buildCount, timing: performance.now() - t1 })
     formula(stats)
@@ -53,7 +61,7 @@ onmessage = async (e) => {
       }
     }
   }
-  for (const artifactsBySlot of artifactSetPermutations(splitArtifacts, setFilters))
+  for (const artifactsBySlot of artifactSetPermutations(prunedArtifacts, setFilters))
     artifactPermutations(initialStats, artifactsBySlot, artifactSetEffects, callback)
 
   prune()

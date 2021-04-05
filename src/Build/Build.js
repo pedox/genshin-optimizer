@@ -1,6 +1,56 @@
 import ElementalData from "../Data/ElementalData"
 
 /**
+ * Remove artifacts that can never be used in optimized builds
+ * @param {artifact[]} artifactsBySlot - list of artifacts of the same slot
+ * @param {Object.<setKey, number>} setFilters - minimum number of artifacts in each set
+ */
+export function pruneArtifacts(artifacts, artifactSetEffects, significantStats) {
+  const tmp = artifacts.map(artifact => {
+    let potential = {}
+
+    if (significantStats.has(artifact.mainStatKey))
+      potential[artifact.mainStatKey] = artifact.mainStatVal
+    for (const {key, value} of artifact.substats)
+      if (significantStats.has(key))
+        potential[key] = (potential[key] ?? 0) + value
+
+    const min = { ...potential }
+
+    for (const effects of Object.values(artifactSetEffects[artifact.setKey] ?? {})) {
+      for (const [key, value] of Object.entries(effects))
+        if (significantStats.has(key))
+          potential[key] = (potential[key] ?? 0) + value
+    }
+
+    return { artifact, min, max: potential }
+  })
+
+  return tmp.filter(({artifact: candidate, max: candidateMax}) =>
+    // Keep if no `other` is better than `candidate`
+    tmp.every(({artifact: other, min: otherMin}) => {
+      // return true if `candidate` is not worse, `false` otherwise
+      if (candidate.id === other.id) return true
+
+      let equal = true
+      for (const [key, candidateValue] of Object.entries(candidateMax)) {
+        const otherValue = otherMin[key] ?? 0
+        if (candidateValue > otherValue)
+          return true
+        if (candidateValue !== otherValue)
+          equal = false
+      }
+      for (const key in otherMin) {
+        if (!(key in candidateMax))
+          equal = false
+      }
+
+      return equal
+    })
+  ).map(tmp => tmp.artifact)
+}
+
+/**
  * Generate all set of artifacts-by-slots based on the filters
  * @param {Object.<slotKey, artifact[]>} artifactsBySlot - list of artifacts, separated by slots
  * @param {Object.<setKey, number>} setFilters - minimum number of artifacts in each set
