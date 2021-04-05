@@ -18,6 +18,7 @@ import CharacterArtifactPane from './CharacterDisplay/CharacterArtifactPane';
 import CharacterOverviewPane from './CharacterDisplay/CharacterOverviewPane';
 import CharacterTalentPane from './CharacterDisplay/CharacterTalentPane';
 import { useForceUpdate } from '../Util/ReactUtil';
+import DamageOptionsAndCalculation from './CharacterDisplay/DamageOptionsAndCalculation';
 
 export const compareAgainstEquippedContext = createContext()
 
@@ -75,13 +76,11 @@ function characterReducer(state, action) {
       const { statKey, value } = action
       const baseStatOverrides = state.baseStatOverrides
       const baseStatVal = Character.getBaseStatValue(state, statKey)
-      if (baseStatVal === value) {
+      if (baseStatVal === value)
         delete baseStatOverrides[statKey]
-        return { ...state, ...baseStatOverrides }
-      } else {
+      else
         baseStatOverrides[statKey] = value
-        return { ...state, ...baseStatOverrides }
-      }
+      return { ...state, baseStatOverrides }
     }
     default:
       break;
@@ -218,6 +217,7 @@ export default function CharacterDisplayCard({ characterKey, character: propChar
               </WIPComponent>
             </Nav.Item>}
           </Nav>
+          {Character.hasTalentPage(characterKey) && <DamageOptionsAndCalculation {...{ character, characterDispatch, newBuild, equippedBuild }} className="mb-2" />}
           <Tab.Content>
             <Tab.Pane eventKey="character">
               <CharacterOverviewPane

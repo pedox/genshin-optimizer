@@ -19,18 +19,16 @@ const StatInput = ({ name, prependEle, value, placeholder, defaultValue, onValue
       onValueChange={onValueChange}
       disabled={disabled}
     />
-    {percent ? (<InputGroup.Append>
-      <InputGroup.Text>%</InputGroup.Text>
-    </InputGroup.Append>) : null}
-    {defaultValue !== undefined ? <InputGroup.Append>
-      <OverlayTrigger placement="top"
+    <InputGroup.Append>
+      {Boolean(percent) && <InputGroup.Text>%</InputGroup.Text>}
+      {defaultValue !== undefined && <OverlayTrigger placement="top"
         overlay={<Tooltip>Reset this override to the default value.</Tooltip>}>
         <span className="d-inline-block">
           <Button onClick={() => onValueChange(defaultValue)} disabled={disabled || value === defaultValue} style={value === defaultValue ? { pointerEvents: 'none' } : {}}>
             <FontAwesomeIcon icon={faUndo} />
           </Button>
         </span>
-      </OverlayTrigger>
-    </InputGroup.Append> : null}
+      </OverlayTrigger>}
+    </InputGroup.Append>
   </InputGroup>
 export default StatInput

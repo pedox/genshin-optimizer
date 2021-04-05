@@ -318,9 +318,15 @@ function MainStatsCards({ editable, character, characterDispatch, equippedBuild,
                   placeholder="Character Special Stat"
                   value={Character.getStatValueWithOverride(character, "specializedStatVal")}
                   onValueChange={value => characterDispatch({ type: "statOverride", statKey: "specializedStatVal", value })} />
-                {isPercentSpecialStatSelect && (<InputGroup.Append>
-                  <InputGroup.Text>%</InputGroup.Text>
-                </InputGroup.Append>)}
+                <InputGroup.Append>
+                  {isPercentSpecialStatSelect && <InputGroup.Text>%</InputGroup.Text>}
+                  <Button onClick={() => {
+                    characterDispatch({ type: "statOverride", statKey: "specializedStatKey", value: Character.getBaseStatValue(character, "specializedStatKey") })
+                    characterDispatch({ type: "statOverride", statKey: "specializedStatVal", value: Character.getBaseStatValue(character, "specializedStatVal") })
+                  }}>
+                    <FontAwesomeIcon icon={faUndo} />
+                  </Button>
+                </InputGroup.Append>
               </InputGroup>
             </Col>
           </Row>
@@ -328,10 +334,10 @@ function MainStatsCards({ editable, character, characterDispatch, equippedBuild,
         <Card.Body>
           <Row className="mb-2">
             {displayStatKeys.map(statKey => <Col xs={12} lg={6} key={statKey} ><StatDisplay statKey={statKey} {...displayNewBuildProps} /></Col>)}
-            {specializedStatVal ? <Col lg={6} xs={12}>
+            <Col lg={6} xs={12}>
               <span><b>Specialized:</b> <span className={Character.hasOverride(character, "specializedStatKey") ? "text-warning" : ""}>{Stat.getStatName(specializedStatKey)}</span></span>
               <span className={`float-right ${Character.hasOverride(character, "specializedStatVal") ? "text-warning" : ""}`}>{`${specializedStatVal}${specializedStatUnit}`}</span>
-            </Col> : null}
+            </Col>
           </Row>
         </Card.Body>
       }

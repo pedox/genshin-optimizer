@@ -6,7 +6,6 @@ import ConditionalSelector from '../../Components/ConditionalSelector';
 import Stat from "../../Stat";
 import ConditionalsUtil from '../../Util/ConditionalsUtil';
 import Character from "../Character";
-import DamageOptionsAndCalculation from './DamageOptionsAndCalculation';
 import StatDisplayComponent from './StatDisplayComponent';
 
 function CharacterArtifactPane({ character, character: { characterKey, artifactConditionals }, equippedBuild, newBuild, editable, characterDispatch, artifacts }) {
@@ -17,9 +16,6 @@ function CharacterArtifactPane({ character, character: { characterKey, artifactC
   const statKeys = Character.getDisplayStatKeys(build.finalStats)
   const setStateArtifactConditional = (setKey, setNumKey, conditionalNum) => characterDispatch?.({ artifactConditionals: ConditionalsUtil.setConditional(artifactConditionals, { srcKey: setKey, srcKey2: setNumKey }, conditionalNum) })
   return <>
-    {Character.hasTalentPage(characterKey) && <Row><Col xs={12} className="mb-2">
-      <DamageOptionsAndCalculation {...{ character, characterDispatch, newBuild, equippedBuild }} />
-    </Col></Row>}
     <Row>
       <Col className="mb-2">
         <Card className="h-100" bg="lightcontent" text="lightfont">

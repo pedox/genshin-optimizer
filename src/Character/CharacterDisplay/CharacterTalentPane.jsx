@@ -1,7 +1,6 @@
 import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import React, { useContext } from 'react';
-import { useState } from "react";
+import React, { useContext, useState } from 'react';
 import { Button, Card, Col, Dropdown, DropdownButton, Image, ListGroup, OverlayTrigger, Row, Tooltip } from "react-bootstrap";
 import Assets from "../../Assets/Assets";
 import ConditionalSelector from "../../Components/ConditionalSelector";
@@ -10,7 +9,6 @@ import { ElementToReactionKeys } from "../../StatData";
 import ConditionalsUtil from "../../Util/ConditionalsUtil";
 import Character from "../Character";
 import { compareAgainstEquippedContext } from "../CharacterDisplayCard";
-import DamageOptionsAndCalculation from "./DamageOptionsAndCalculation";
 
 export default function CharacterTalentPane(props) {
   const { character, character: { characterKey, levelKey, constellation }, editable, characterDispatch, newBuild, equippedBuild } = props
@@ -20,9 +18,6 @@ export default function CharacterTalentPane(props) {
   const skillDisplayProps = { ...props, ascension }
 
   return <>
-    <Row><Col xs={12} className="mb-2">
-      <DamageOptionsAndCalculation {...{ character, characterDispatch, newBuild, equippedBuild }} />
-    </Col></Row>
     <Row><Col><ReactionDisplay {...{ character, newBuild, equippedBuild }} /></Col></Row>
     <Row>
       {/* auto, skill, burst */}
