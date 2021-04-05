@@ -1,6 +1,6 @@
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import React, { createContext, useCallback, useEffect, useMemo, useReducer, useState } from 'react';
+import React, { createContext, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Badge, ButtonGroup, Dropdown, DropdownButton, Image, Nav, Tab } from 'react-bootstrap';
 import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
@@ -17,7 +17,6 @@ import CharacterDatabase from '../Database/CharacterDatabase';
 import CharacterArtifactPane from './CharacterDisplay/CharacterArtifactPane';
 import CharacterOverviewPane from './CharacterDisplay/CharacterOverviewPane';
 import CharacterTalentPane from './CharacterDisplay/CharacterTalentPane';
-import { useForceUpdate } from '../Util/ReactUtil';
 import DamageOptionsAndCalculation from './CharacterDisplay/DamageOptionsAndCalculation';
 
 export const compareAgainstEquippedContext = createContext()
@@ -66,10 +65,8 @@ const initialCharacter = (characterKey) => ({
 
 function characterReducer(state, action) {
   switch (action.type) {
-    case "reset":
-      return initialCharacter()
     case "overwrite":
-      return action.character
+      return { ...state, ...action.character }
     case "fromDB"://for equipping artifacts, that makes the changes in DB instead of in state.
       return { ...state, ...CharacterDatabase.get(state.characterKey, {}) }
     case "statOverride": {
@@ -90,16 +87,19 @@ function characterReducer(state, action) {
 export default function CharacterDisplayCard({ characterKey, character: propCharacter, setCharacterKey: propSetCharacterKey, footer, newBuild: propNewBuild, editable, onClose, tabName }) {
   const [character, characterDispatch] = useReducer(characterReducer, initialCharacter(characterKey))
   const [compareAgainstEquipped, setcompareAgainstEquipped] = useState(false)
-  const forceUpdate = useForceUpdate()
+  const firstUpdate = useRef(true)
+  const [updateState, update] = useState({})
+  const forceUpdate = useCallback(() => update({}), [])
   useEffect(() => {
-    let char
-    if (characterKey)
-      char = { ...initialCharacter(characterKey), ...CharacterDatabase.get(characterKey, {}) }
-    else if (propCharacter)
-      char = { ...initialCharacter(propCharacter.characterKey), ...propCharacter }
-    if (!char) return
+    if (!characterKey) return
+    const char = { ...initialCharacter(characterKey), ...CharacterDatabase.get(characterKey, {}) }
     characterDispatch({ type: "overwrite", character: char })
-  }, [characterKey, propCharacter])
+  }, [characterKey])
+  useEffect(() => {
+    if (!propCharacter) return
+    const char = { ...initialCharacter(propCharacter.characterKey), ...propCharacter }
+    characterDispatch({ type: "overwrite", character: char })
+  }, [propCharacter])
   useEffect(() => {
     Promise.all([
       Character.getCharacterDataImport(),
@@ -107,8 +107,16 @@ export default function CharacterDisplayCard({ characterKey, character: propChar
       Artifact.getDataImport(),
     ]).then(forceUpdate)
   }, [forceUpdate])
-  //save character to DB
-  useEffect(() => CharacterDatabase.update(character), [character])
+
+  useEffect(() => {
+    //skip saving on the first update, since those updates are from loading from DB
+    if (firstUpdate.current) {
+      firstUpdate.current = false
+      return
+    }
+    //save character to DB
+    editable && CharacterDatabase.update(character)
+  }, [character, editable])
 
   const setCharacterKey = useCallback(
     newCKey => {
@@ -131,8 +139,8 @@ export default function CharacterDisplayCard({ characterKey, character: propChar
 
   const { levelKey, artifacts: flexArts } = character
 
-  const equippedBuild = useMemo(() => Character.calculateBuild(character), [character])
-
+  const equippedBuild = useMemo(() => updateState && Character.calculateBuild(character), [character, updateState])
+  characterKey = propCharacter?.characterKey ?? characterKey
   const HeaderIconDisplay = characterKey ? <span >
     <Image src={Character.getThumb(characterKey)} className="thumb-small my-n1 ml-n2" roundedCircle />
     <h6 className="d-inline"> {Character.getName(characterKey)} </h6>
@@ -211,11 +219,6 @@ export default function CharacterDisplayCard({ characterKey, character: propChar
                 <Nav.Link eventKey="talent">Talents</Nav.Link>
               }
             </Nav.Item>
-            {!flexArts && <Nav.Item>
-              <WIPComponent>
-                <Nav.Link eventKey="team" disabled>Team <Badge variant="warning">WIP</Badge></Nav.Link>
-              </WIPComponent>
-            </Nav.Item>}
           </Nav>
           {Character.hasTalentPage(characterKey) && <DamageOptionsAndCalculation {...{ character, characterDispatch, newBuild, equippedBuild }} className="mb-2" />}
           <Tab.Content>
