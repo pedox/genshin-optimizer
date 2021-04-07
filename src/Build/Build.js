@@ -2,10 +2,13 @@ import ElementalData from "../Data/ElementalData"
 
 /**
  * Remove artifacts that can never be used in optimized builds
- * @param {artifact[]} artifactsBySlot - list of artifacts of the same slot
- * @param {Object.<setKey, number>} setFilters - minimum number of artifacts in each set
+ * @param {artifact[]} artifacts - List of artifacts of the same slot
+ * @param {Object.<setKey, Object.<number, Object.<statKey, statValue>>>} artifactSetEffects - The list of the set effects
+ * @param {Set.<statKey>} significantStats - A set of stats that pruning needs to take into consideration
+ * @param {bool} ascending - Whether the sorting is ascending or descending
+ * @param {Set.<setKey>} alwaysAccepted - The list of artifact sets that are always included
  */
-export function pruneArtifacts(artifacts, artifactSetEffects, significantStats, ascending) {
+export function pruneArtifacts(artifacts, artifactSetEffects, significantStats, ascending, alwaysAccepted = new Set()) {
   const tmp = artifacts.map(artifact => {
     let potential = {}
 
@@ -35,7 +38,7 @@ export function pruneArtifacts(artifacts, artifactSetEffects, significantStats, 
 
   return tmp.filter(({artifact: candidate, max: candidateMax}) =>
     // Keep if no `other` is better than `candidate`
-    tmp.every(({artifact: other, min: otherMin}) => {
+    alwaysAccepted.has(candidate.setKey) || tmp.every(({artifact: other, min: otherMin}) => {
       // return true if `candidate` is not worse, `false` otherwise
       if (candidate.id === other.id) return true
 

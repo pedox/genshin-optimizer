@@ -30,24 +30,33 @@ onmessage = async (e) => {
   }
 
   const dependencies = GetDependencies(stats.modifiers, [...targetKeys, ...Object.keys(minFilters), ...Object.keys(maxFilters)])
-  const prunedArtifacts = (Object.keys(ascending ? minFilters : maxFilters).length !== 0) ? splitArtifacts :
+  const oldCount = calculateTotalBuildNumber(splitArtifacts, setFilters)
+
+  const prune = (alwaysAccepted) => (Object.keys(ascending ? minFilters : maxFilters).length !== 0) ? splitArtifacts :
     Object.fromEntries(Object.entries(splitArtifacts).map(([key, values]) =>
-      [key, pruneArtifacts(values, artifactSetEffects, new Set(dependencies), ascending)]))
+      [key, pruneArtifacts(values, artifactSetEffects, new Set(dependencies), ascending, new Set(alwaysAccepted))]))
+
+  let prunedArtifacts = prune([])
+  let newCount = calculateTotalBuildNumber(prunedArtifacts, setFilters)
+  if (newCount < maxBuildsToShow) {
+    // over-pruned, try not to prune the set-filter
+    prunedArtifacts = prune(setFilters.map(set => set.key))
+    newCount = calculateTotalBuildNumber(prunedArtifacts, setFilters)
+  }
+  if (newCount < maxBuildsToShow) {
+    // still not enough... let's just not prune it
+    prunedArtifacts = splitArtifacts
+    newCount = oldCount
+  }
 
   let { initialStats, formula } = PreprocessFormulas(dependencies, stats)
   let builds = [], threshold = -Infinity
+  let buildCount = oldCount - newCount;
 
-  const prune = () => {
+  const gc = () => {
     builds.sort((a, b) => (b.buildFilterVal - a.buildFilterVal))
     builds.splice(maxBuildsToShow)
   }
-
-  const oldCount = calculateTotalBuildNumber(splitArtifacts, setFilters)
-  const newCount = calculateTotalBuildNumber(prunedArtifacts, setFilters)
-  let buildCount = oldCount - newCount;
-
-  if (process.env.NODE_ENV === "development")
-    console.log(`Skipped ${Math.round(buildCount/1000000)}M entries out of ${Math.round(oldCount/1000000)}M, ${Math.round(newCount/1000000)}M remaining.`)
 
   const callback = (accu, stats) => {
     if (!(buildCount++ % 10000)) postMessage({ progress: buildCount, timing: performance.now() - t1 })
@@ -58,7 +67,7 @@ onmessage = async (e) => {
     if (buildFilterVal >= threshold) {
       builds.push({ buildFilterVal, artifacts: { ...accu } })
       if (builds.length >= 1000) {
-        prune()
+        gc()
         threshold = builds[builds.length - 1].buildFilterVal
       }
     }
@@ -66,7 +75,7 @@ onmessage = async (e) => {
   for (const artifactsBySlot of artifactSetPermutations(prunedArtifacts, setFilters))
     artifactPermutations(initialStats, artifactsBySlot, artifactSetEffects, callback)
 
-  prune()
+  gc()
 
   let t2 = performance.now()
   postMessage({ progress: buildCount, timing: t2 - t1 })
