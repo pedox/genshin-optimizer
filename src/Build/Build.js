@@ -39,7 +39,7 @@ export function pruneArtifacts(artifacts, artifactSetEffects, significantStats, 
   return tmp.filter(({artifact: candidate, max: candidateMax}) =>
     // Keep if no `other` is better than `candidate`
     alwaysAccepted.has(candidate.setKey) || tmp.every(({artifact: other, min: otherMin}) => {
-      // return true if `candidate` is not worse, `false` otherwise
+      // return true if `candidate` is better than or incomparable to `other`
       if (candidate.id === other.id) return true
 
       let equal = true
@@ -55,7 +55,7 @@ export function pruneArtifacts(artifacts, artifactSetEffects, significantStats, 
           equal = false
       }
 
-      return equal && candidate.id < other.id
+      return equal
     })
   ).map(tmp => tmp.artifact)
 }

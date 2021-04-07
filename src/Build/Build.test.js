@@ -162,7 +162,7 @@ describe('pruneArtifacts', () => {
     const stats = new Set(["stat1", "stat2"])
     expect(pruneArtifacts([...goodArtifact, ...badArtifact], {}, stats)).toEqual(goodArtifact)
   })
-  test('should keep (first of) the duplicated artifacts', () => {
+  test('should keep the "similar" artifacts', () => {
     const goodArtifact = [{
       id: "0", setKey: "x",
       mainStatKey: "stat1", mainStatVal: 10,
@@ -177,7 +177,7 @@ describe('pruneArtifacts', () => {
       substats: [ { key: "stat2", value: 20 }, ]
     }]
     const stats = new Set(["stat1", "stat2"])
-    expect(pruneArtifacts(goodArtifact, {}, stats)).toEqual([goodArtifact[0]])
+    expect(pruneArtifacts(goodArtifact, {}, stats)).toEqual(goodArtifact)
   })
   test('should include set bonus', () => {
     const good = {
