@@ -129,44 +129,34 @@ function decodeString(stream, schema) {
 }
 
 function encodeUInt(uint, schema) {
-  const string = numberToString(uint, schema.length)
+  const string = uintToString(uint, schema.length)
   return schema.length ? string : (encodeLength(string.length) + string)
 }
 function decodeUInt(stream, schema) {
   let length = schema.length || decodeLength(stream)
-  return stringToNumber(stream.take(length))
+  return stringToUInt(stream.take(length))
 }
 
 // Keep the length low. We might want to reserve high bits for later extension.
 function encodeLength(length) {
   if (length >= 32)
     throw new Error(`Length (${length}) too large`)
-  return numberToString(length, 1)
+  return uintToString(length, 1)
 }
 function decodeLength(stream) {
-  let length = stringToNumber(stream.take(1))
+  let length = stringToUInt(stream.take(1))
   if (length >= 32)
     throw new Error(`Length (${length}) too large`)
   return length
 }
 
-function numberToString(number, length = 0) {
+function uintToString(number, length = 0) {
   if (number < 0) throw new Error(`Cannot encode negative number ${number}`)
 
   var string = ""
   while (number > 0) {
-    const remainder = number % 64
+    string += uintToChar(number % 64)
     number = Math.floor(number / 64)
-    if (remainder < 10) // 0-9
-      string += String.fromCharCode(remainder + 48 - 0)
-    else if (remainder < 36) // a-z
-      string += String.fromCharCode(remainder + 97 - 10)
-    else if (remainder < 62) // A-Z
-      string += String.fromCharCode(remainder + 65 - 36)
-    else if (remainder === 62) // -
-      string += "-"
-    else if (remainder === 63) // _
-      string += "_"
   }
 
   if (!length)
@@ -176,43 +166,50 @@ function numberToString(number, length = 0) {
     throw new Error(`Cannot encode uint ${number}: value too large`)
   return string.padEnd(length, "0")
 }
-function stringToNumber(string) {
+function stringToUInt(string) {
   let result = 0, multiplier = 1
 
   for (let i = 0; i < string.length; i++) {
-    let code = string.charCodeAt(i)
-
-    if (48 <= code && code < 58) // 0-9
-      result += multiplier * (code - 48 + 0)
-    else if (97 <= code && code < 123) // a-z
-      result += multiplier * (code - 97 + 10)
-    else if (65 <= code && code < 91) // A-Z
-      result += multiplier * (code - 65 + 36)
-    else if (string[i] === '-')
-      result += multiplier * 62
-    else if (string[i] === '_')
-      result += multiplier * 63
-    else throw new Error(`Cannot parse UInt from "${string}", which contains "${String.fromCharCode(code)}"`)
-
+    result += multiplier * charToUInt(string, i)
     multiplier *= 64
   }
 
   return result
 }
 
-function BlockStream(string) {
-  this.string = string
-  this.offset = 0
+function uintToChar(number) {
+  if (number < 10) return String.fromCharCode(number + 48 - 0) // 0-9
+  if (number < 36) return String.fromCharCode(number + 97 - 10) // a-z
+  if (number < 62) return String.fromCharCode(number + 65 - 36) // A-Z
+  if (number === 62) return "-"
+  if (number === 63) return "_"
+  throw new Error(`Cannot convert ${number} to char`)
 }
-BlockStream.prototype.take = function(count) {
-  if (this.offset + count > this.string.length)
-    throw new Error(`Cannot take ${count} items from ${this.string.slice(this.offset)}`)
+function charToUInt(string, index) {
+  const code = string.charCodeAt(index)
+  if (48 <= code && code < 58) return code - 48 + 0 // 0-9
+  if (97 <= code && code < 123) return code - 97 + 10 // a-z
+  if (65 <= code && code < 91) return code - 65 + 36 // A-Z
+  if (string[index] === '-') return 62
+  if (string[index] === '_') return 63
+  throw new Error(`Cannot convert "${string[index]}" in "${string}" to uint`)
+}
 
-  const result = this.string.slice(this.offset, this.offset + count)
-  this.offset += count
-  return result
-}
-BlockStream.prototype.end = function() {
-  if (this.string.length !== this.offset)
-    throw new Error(`Unused string ${this.string.slice(this.offset)}`)
+class BlockStream {
+  constructor(string) {
+    this.string = string
+    this.offset = 0
+  }
+  take(count) {
+    if (this.offset + count > this.string.length)
+      throw new Error(`Cannot take ${count} items from ${this.string.slice(this.offset)}`)
+
+    const result = this.string.slice(this.offset, this.offset + count)
+    this.offset += count
+    return result
+  }
+  end() {
+    if (this.string.length !== this.offset)
+      throw new Error(`Unused string ${this.string.slice(this.offset)}`)
+  }
 }
