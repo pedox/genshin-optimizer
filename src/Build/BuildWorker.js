@@ -57,7 +57,7 @@ onmessage = async (e) => {
 
   let { initialStats, formula } = PreprocessFormulas(dependencies, stats)
   let builds = [], threshold = -Infinity
-  let buildCount = oldCount - newCount;
+  let buildCount = 0, skipped = oldCount - newCount
 
   const gc = () => {
     builds.sort((a, b) => (b.buildFilterVal - a.buildFilterVal))
@@ -65,7 +65,7 @@ onmessage = async (e) => {
   }
 
   const callback = (accu, stats) => {
-    if (!(buildCount++ % 10000)) postMessage({ progress: buildCount, timing: performance.now() - t1 })
+    if (!(buildCount++ % 10000)) postMessage({ progress: buildCount, timing: performance.now() - t1, skipped })
     formula(stats)
     if (Object.entries(minFilters).some(([key, minimum]) => stats[key] < minimum)) return
     if (Object.entries(maxFilters).some(([key, maximum]) => stats[key] > maximum)) return
@@ -84,6 +84,6 @@ onmessage = async (e) => {
   gc()
 
   let t2 = performance.now()
-  postMessage({ progress: buildCount, timing: t2 - t1 })
-  postMessage({ builds, timing: t2 - t1 })
+  postMessage({ progress: buildCount, timing: t2 - t1, skipped })
+  postMessage({ builds, timing: t2 - t1, skipped })
 }
